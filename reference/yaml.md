@@ -119,10 +119,15 @@ ctype stage secret DB_PASSWORD -r               # 삭제
 
 ### DB 배포 권장 패턴
 
-1. 강한 패스워드 생성 → DB preset 의 `rootpassword` 에 **plain** 으로
-2. 같은 값을 `ctype stage secret DB_PASSWORD <값>` 으로 저장
-3. 연결 문자열도 `ctype stage secret DATABASE_URL "postgresql://root:<값>@<host>:<port>/<db>"` 로 저장
-4. 앱 서비스의 `env[]` 에서 `{ name: DATABASE_URL, secret: DATABASE_URL }` 로 참조
+1. 강한 패스워드 생성 → DB preset 의 `rootpassword` 에 **plain** 으로 박고 `ctype apply` 후 Cloudtype 이 `<deployment-name>-root-password` 시크릿을 자동 등록합니다.
+2. 앱 서비스의 `env[]` 에서 다음을 박습니다.
+   - `DB_HOST` = deployment 이름 (평문)
+   - `DB_PORT` = preset 표준 포트 (평문)
+   - `DB_NAME` = yaml 의 `database` (평문)
+   - `DB_USER` = yaml 의 `rootusername` (평문)
+   - `DB_PASSWORD` → `<deployment-name>-root-password` 자동 시크릿 참조
+
+수동으로 `ctype stage secret` 을 디디면 채워넣은 필요는 없습니다. `rootpassword` `rootusername` `database` 는 첫 부팅 시점에 디스크에 박히므로 이후 yaml 값을 바꿔도 실제 자격증명은 갱신되지 않으며, 바꾸려면 deployment 삭제 후 재배포가 필요합니다 (기존 데이터 손실).
 
 ---
 
