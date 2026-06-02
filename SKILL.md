@@ -1,17 +1,17 @@
 ---
 name: ctype-skill
 description: >
-  사용자 요청을 받아 작은 웹 서비스 한 벌 (백엔드 ± 프론트 ± DB) 의 코드를
+  사용자 요청을 받아 웹 서비스 한 벌 (백엔드 ± 프론트 ± DB) 의 코드를
   작성하고 Cloudtype 에 배포합니다. 풀스택 프레임워크 한 통을 기본 형태로
-  하며, DB 가 필요하면 같은 stage 의 별도 deployment 로 띄워 사내 DNS 로
-  연결합니다. 사용자가 Cloudtype, ctype, cloudtype.app 도메인을 언급하거나
+  하며, DB 가 필요하면 같은 stage 의 별도 deployment 로 띄워 서비스 이름으로
+  통신합니다. 사용자가 Cloudtype, ctype, cloudtype.app 도메인을 언급하거나
   웹앱·API·DB 배포를 요청할 때 사용합니다.
 allowed-tools: Bash(ctype:*), Bash(curl:*), Bash(python:*), Bash(python3:*), Bash(npm:*), Bash(which:*), Bash(git:*), Bash(gh:*)
 ---
 
 # ctype-skill
 
-작은 웹 서비스 한 벌을 코드 작성부터 [Cloudtype](https://cloudtype.io) 배포까지 한 사이클로 처리합니다.
+웹 서비스 한 벌을 코드 작성부터 [Cloudtype](https://cloudtype.io) 배포까지 한 사이클로 처리합니다.
 
 기본 구성: **풀스택 프레임워크 한 통 ± DB**. 사용자가 프론트/백엔드 분리를 명시하면 그 형태로 갑니다.
 
@@ -78,19 +78,24 @@ ctype use @<scope>/<name>:main
 
 사용자 요청을 다음 세 축으로 정리합니다.
 
-### 프레임워크 선택
+### 프레임워크 + DB 선택
 
-기본 가정: **풀스택 프레임워크 한 통**. Next.js, SvelteKit, Nuxt.js, Remix, FastAPI + 템플릿, Spring Boot 같이 한 프로세스가 API 와 화면을 함께 책임지는 형태를 선호합니다.
+사용자가 언어/프레임워크 또는 DB 를 지정한 경우 그대로 따릅니다.
 
-사용자가 사용 언어/프레임워크를 지정한 경우 그대로 따릅니다. 명시가 없으면 요청의 성격을 보고 합당한 한 가지를 정해 진행합니다.
+지정이 없으면 아래의 기본 조합을 사용하고 완료 보고에 명시합니다.
 
-`ctype presets` 목록에서 해당 프레임워크의 preset 이름과 example URL 을 확인하여, 작성할 코드의 표준 구조를 example URL 의 구조에 맞춥니다.
+| 백엔드 | 기본 DB |
+|---|---|
+| 미지정 | `node` + `postgresql` |
+| `java-springboot` / `kotlin` | `mariadb` |
+| `python-django` / `python-flask` / `python-fastapi` | `postgresql` |
+| `golang` / `gin` / `fiber` | `postgresql` |
+| `dotnet` | `mariadb` |
+| `ruby-rails` | `postgresql` |
 
-### DB 필요 여부
+저장이 필요 없는 단순 화면/도구는 DB 를 띄우지 않습니다.
 
-저장이 필요한 요청이면 DB 한 종류를 같은 stage 의 별도 deployment 로 띄웁니다. 종류 미명시 + 사용자에게 묻기 곤란한 컨텍스트면 `postgresql` 로 결정하고 완료 보고에 명시합니다.
-
-DB 가 필요하지 않은 단순 화면/도구는 DB 를 띄우지 않습니다.
+`ctype presets` 목록에서 선택한 프레임워크의 preset 이름과 example URL 을 확인하여, 작성할 코드의 표준 구조를 example URL 의 구조에 맞춥니다.
 
 ### 분리 여부
 
@@ -114,7 +119,7 @@ DB 가 필요하지 않은 단순 화면/도구는 DB 를 띄우지 않습니다
 
 코드에서 사용하는 모든 env 키를 정리해 두면 5단계에서 등록 누락이 없습니다.
 
-### DB 가 있을 때 — 사내 DNS
+### DB 가 있을 때 — 서비스 이름으로 통신
 
 같은 stage 의 서비스는 deployment 이름이 곧 호스트가 됩니다. 표준 패턴:
 

@@ -1,13 +1,13 @@
 # ctype-skill
 
-작은 웹 서비스 한 벌 (백엔드 ± 프론트 ± DB) 의 코드 작성부터 [Cloudtype](https://cloudtype.io) 배포까지 한 사이클로 처리하는 AgentSkill 입니다.
+웹 서비스 한 벌 (백엔드 ± 프론트 ± DB) 의 코드 작성부터 [Cloudtype](https://cloudtype.io) 배포까지 한 사이클로 처리하는 AgentSkill 입니다.
 
 `ctype` CLI 를 주력으로 사용하며, CLI 가 다루지 않는 세 가지 작업 (빌드 로그 / 실행 로그 / 연동된 GitHub repo 조회) 에 한해 Cloudtype API 를 직접 호출합니다.
 
 ## 기본 구성
 
 - 풀스택 프레임워크 한 통 (Next.js / SvelteKit / FastAPI 등) + 필요 시 DB
-- DB 가 있는 경우 같은 stage 의 별도 deployment 로 띄워 사내 DNS (`postgres:5432` 등) 로 연결
+- DB 가 있는 경우 같은 stage 의 별도 deployment 로 띄워 서비스 이름으로 통신 (`postgres:5432` 등)
 - 사용자가 프론트와 백엔드 분리를 명시하면 그 형태로 진행
 
 ## 필요한 환경
