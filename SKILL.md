@@ -94,8 +94,6 @@ ctype use @<scope>/<name>:main
 
 저장이 필요 없는 단순 화면/도구는 DB 를 띄우지 않습니다.
 
-`ctype presets` 목록에서 선택한 프레임워크의 preset 이름과 example URL 을 확인하여, 작성할 코드의 표준 구조를 example URL 의 구조에 맞춥니다.
-
 ### 분리 여부
 
 사용자가 프론트와 백엔드 분리를 명시하면 두 개의 deployment 로 갑니다 (5단계의 별도 절). 명시가 없으면 한 통으로 진행합니다.
@@ -104,7 +102,7 @@ ctype use @<scope>/<name>:main
 
 ## 3. 코드 작성
 
-선택한 preset 의 example URL 구조를 표준으로 삼아 작성합니다. 진입 파일명, 빌드 산출물 위치, `package.json` / `requirements.txt` 등 패키지 매니페스트의 구성은 example 과 일치하게 둡니다.
+프레임워크의 일반적인 구조를 따르되, Cloudtype 이 자동으로 호출하는 진입점 규약을 지킵니다. preset 별 진입점: Node 는 `package.json` 의 `scripts.start`, Python Flask 는 `app:app` (gunicorn), Django 는 wsgi, FastAPI 는 `main:app`, Spring Boot 은 표준 jar 산출물. 진입점이 표준에서 벗어나면 5.3 에서 `options.start` 로 override 합니다.
 
 ### 환경변수 기반 설정
 
