@@ -102,7 +102,7 @@ ctype use @<scope>/<name>:main
 
 ## 3. 코드 작성
 
-프레임워크의 일반적인 구조를 따르되, Cloudtype 이 자동으로 호출하는 진입점 규약을 지킵니다. preset 별 진입점: Node 는 `package.json` 의 `scripts.start`, Python Flask 는 `app:app` (gunicorn), Django 는 wsgi, FastAPI 는 `main:app`, Spring Boot 은 표준 jar 산출물. 진입점이 표준에서 벗어나면 5.3 에서 `options.start` 로 override 합니다.
+프레임워크의 일반적인 구조를 따르되, Cloudtype 이 자동으로 호출할 수 있도록 preset 의 표준 진입점을 유지합니다. 진입점이 표준에서 벗어나면 5.3 에서 `options.start` 로 override 합니다.
 
 ### 환경변수 기반 설정
 
