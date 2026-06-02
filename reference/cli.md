@@ -36,7 +36,7 @@ items = data if isinstance(data, list) else data.get("deployments", [])
 for d in items:
     name = d.get("name")
     status = ((d.get("stat") or {}).get("status") or "unknown").lower()
-    print(name + ": " + status)
+    print(f"{name}: {status}")
 '
 ```
 
@@ -51,7 +51,5 @@ for d in items:
 - `unknown`: JSON 경로를 추측하지 말고 원본을 출력해서 구조 확인
 
 Node.js deprecation warning 이 JSON 앞에 섞이면 파싱이 실패할 수 있으므로 `NODE_NO_WARNINGS=1` 을 붙입니다. 그래도 파싱이 실패하면 `ctype list` 텍스트 출력으로 상태를 확인합니다.
-
-Python inline one-liner 에서는 JSON key quoting 때문에 `f"{d[\"key\"]}"` 같은 패턴을 쓰지 않습니다. Python 3.11 이하에서 f-string expression 안의 backslash 때문에 SyntaxError 가 날 수 있으므로 값을 변수로 빼거나 `print("key:", value)` 패턴을 씁니다.
 
 PostgreSQL 같은 DB preset 은 정상 흐름에서 별도 Running polling 하지 않습니다. 백엔드 연결 실패나 인증 실패가 발생했을 때만 `NODE_NO_WARNINGS=1 ctype list -o json` 과 로그로 확인합니다.
