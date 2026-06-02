@@ -61,7 +61,7 @@ ctype whoami -o json              # scopes 배열에 사용 가능한 scope
 ctype projects                    # 기존 프로젝트 목록
 ```
 
-scope 는 `ctype whoami -o json` 의 `scopes` 배열에서 얻습니다. `ctype projects` 의 첫 줄에도 `Current scope is "@<scope>"` 형태로 나오지만, 프로젝트가 한 개도 없는 경우에는 그 행이 나오지 않으므로 `whoami` 쪽이 안정적입니다.
+scope 는 `ctype whoami -o json` 의 `scopes` 배열에서 얻습니다.
 
 ### 새 프로젝트가 필요할 때
 
