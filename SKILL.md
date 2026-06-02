@@ -91,9 +91,6 @@ ctype use @<scope>/<name>:main
 | 미지정 | `node` + `postgresql` |
 | `java-springboot` / `kotlin` | `mariadb` |
 | `python-django` / `python-flask` / `python-fastapi` | `postgresql` |
-| `golang` / `gin` / `fiber` | `postgresql` |
-| `dotnet` | `mariadb` |
-| `ruby-rails` | `postgresql` |
 
 저장이 필요 없는 단순 화면/도구는 DB 를 띄우지 않습니다.
 
