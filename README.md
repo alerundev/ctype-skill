@@ -2,7 +2,7 @@
 
 웹 서비스 한 벌 (백엔드 ± 프론트 ± DB) 의 코드 작성부터 [Cloudtype](https://cloudtype.io) 배포까지 한 사이클로 처리하는 AgentSkill 입니다.
 
-`ctype` CLI 를 주력으로 사용하며, CLI 가 다루지 않는 세 가지 작업 (빌드 로그 / 실행 로그 / 연동된 GitHub repo 조회) 에 한해 Cloudtype API 를 직접 호출합니다.
+`ctype` CLI 를 주력으로 사용하며, CLI 가 다루지 않는 빌드 로그·실행 로그 조회에 한해 Cloudtype API 를 직접 호출합니다.
 
 ## 기본 구성
 
@@ -37,10 +37,9 @@ ctype-skill/
 ├── SKILL.md              # 진입점 (전체 흐름 + 정책)
 ├── reference/
 │   ├── yaml.md           # app.yaml 필드 가이드, preset 옵션, 시크릿 문법, DB 패턴
-│   └── api.md            # 이 스킬이 호출하는 3개 API
+│   └── api.md            # 빌드/실행 로그 WebSocket API
 ├── scripts/
-│   ├── logs.py           # 빌드/실행 로그 클라이언트
-│   └── find_repo.py      # 연동된 GitHub repo 조회/매칭
+│   └── logs.py           # 빌드/실행 로그 클라이언트
 ├── README.md
 └── LICENSE
 ```
