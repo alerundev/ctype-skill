@@ -44,6 +44,7 @@ python scripts/logs.py run   <deployment> -p   # 이전 컨테이너 (재시작 
 ```bash
 python scripts/find_repo.py "<키워드>"          # 이름/설명 일부 일치
 python scripts/find_repo.py --list               # 전체 목록 (탭 구분)
+python scripts/find_repo.py --branches <URL>     # 특정 repo 의 전체 브랜치 목록
 ```
 
 ### 호출 흐름
@@ -77,6 +78,22 @@ name=<repo>
 **후보 여러 개** (exit 2, stderr): 번호 매긴 선택지. 호출자가 사용자에게 그대로 제시합니다.
 
 **실패** (exit 1, stderr): `ERROR: <이유>` 형태의 명확한 메시지.
+
+### 브랜치 목록 조회 (`--branches`)
+
+빌드 실패가 브랜치 불일치 (`Couldn't find remote ref` 등) 로 의심될 때 호출합니다.
+
+```
+GET /oauth/github/repository/<installationid>/<repo>/branch  → ["main", "dev", "staging", ...]
+```
+
+호출자는 URL 을 그대로 넘기면 되며, helper 가 owner/repo 를 추출하고 일치하는 installation 을 찾아 호출합니다.
+
+```bash
+python scripts/find_repo.py --branches "https://github.com/<owner>/<repo>"
+# stdout: 한 줄에 브랜치 이름 하나씩, exit 0
+# 조회 실패: stderr 명확한 메시지, exit 1
+```
 
 ### 호출자 권장 패턴
 

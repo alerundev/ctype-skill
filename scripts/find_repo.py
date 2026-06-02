@@ -10,6 +10,7 @@ CLI 가 노출하지 않는 기능이라 보조 API 사용:
 사용법:
     python scripts/find_repo.py <키워드>          # 사용자 발화 단어 (예: "주소 축약기")
     python scripts/find_repo.py --list            # 그냥 전체 목록만 (이름·URL·기본브랜치)
+    python scripts/find_repo.py --branches <URL>  # 특정 repo 의 전체 브랜치 목록
 
 종료 코드:
     0  → 후보 1개 자동 확정. stdout: "url=<URL> branch=<BRANCH> name=<NAME>"
@@ -142,13 +143,61 @@ def list_all(repos):
     sys.exit(0)
 
 
+def extract_owner_repo(url: str):
+    """GitHub URL 에서 (owner, repo) 추출. .git 제거, 대소문자 유지."""
+    m = re.match(r"^(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/?#]+?)(?:\.git)?/?$", url.strip())
+    if not m:
+        die(1, f"ERROR: GitHub URL 경로를 인식하지 못했습니다: {url}")
+    return m.group(1), m.group(2)
+
+
+def branches_for_url(target_url: str, key: str):
+    """--branches <URL>: 해당 repo 의 전체 브랜치 목록을 stdout 에 한 줄씩."""
+    owner, name = extract_owner_repo(target_url)
+    accounts = fetch_accounts(key)
+
+    # owner 와 계정명이 맞는 installation 우선, 못 찾으면 모든 계정을 순회
+    candidates = [a for a in accounts if a.get("name", "").lower() == owner.lower()] or accounts
+
+    last_err = None
+    for acc in candidates:
+        inst = acc.get("installationid")
+        if not inst:
+            continue
+        try:
+            req = urllib.request.Request(
+                API + f"/oauth/github/repository/{inst}/{name}/branch",
+                headers={"Authorization": f"Bearer {key}"},
+            )
+            with urllib.request.urlopen(req, timeout=15) as r:
+                data = json.loads(r.read().decode("utf-8"))
+            if isinstance(data, list):
+                for b in data:
+                    print(b)
+                sys.exit(0)
+        except urllib.error.HTTPError as e:
+            last_err = f"HTTP {e.code} {e.reason}"
+            continue
+        except urllib.error.URLError as e:
+            last_err = str(e)
+            continue
+
+    die(1, f"ERROR: repo '{owner}/{name}' 의 브랜치 목록을 조회하지 못했습니다. ({last_err or 'no candidate'})")
+
+
 def main():
     p = argparse.ArgumentParser(description="Cloudtype 연동 GitHub repo 매칭")
     p.add_argument("keyword", nargs="?", help="매칭할 키워드 (사용자 발화 단어)")
     p.add_argument("--list", action="store_true", help="전체 목록 출력 (탭 구분, 매칭 안 함)")
+    p.add_argument("--branches", metavar="URL", help="특정 repo URL 의 전체 브랜치 목록")
     args = p.parse_args()
 
     key = get_apikey()
+
+    # --branches 는 자체 흐름 (repo 목록 전체 fetch 의존 X)
+    if args.branches:
+        branches_for_url(args.branches, key)
+
     accounts = fetch_accounts(key)
     repos = fetch_all_repos(accounts, key)
 
@@ -156,7 +205,7 @@ def main():
         list_all(repos)
 
     if not args.keyword:
-        die(1, "ERROR: 키워드가 필요합니다. 사용법: find_repo.py <키워드> 또는 --list")
+        die(1, "ERROR: 키워드가 필요합니다. 사용법: find_repo.py <키워드> 또는 --list 또는 --branches <URL>")
 
     hits = match_repos(repos, args.keyword)
 

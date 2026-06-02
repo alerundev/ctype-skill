@@ -219,6 +219,7 @@ API 프로토콜 세부: [`reference/api.md`](reference/api.md).
 
 | 원인 | 처리 |
 |---|---|
+| 브랜치 불일치 (`Couldn't find remote ref`, `branch not found` 등) | `python scripts/find_repo.py --branches <git-url>` 로 실제 브랜치 목록 조회 → `context.git.ref` 수정 → `ctype apply` |
 | 포트 불일치 (`EADDRINUSE`, connection refused, healthcheck 실패 등) | 로그에서 실제 listen 포트 찾아 `options.ports` 수정 → `ctype apply` |
 | Cloudtype 설정 (healthz, start, env 누락 등) | 변경 사유 1줄 보고 → `app.yaml` 수정 → `ctype apply` |
 | 시크릿/환경변수 누락 또는 오타 | `ctype stage secret` 또는 `ctype stage variable` 로 수정 → `ctype apply` |
