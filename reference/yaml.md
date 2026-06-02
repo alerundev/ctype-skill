@@ -119,7 +119,7 @@ ctype stage secret DB_PASSWORD -r               # 삭제
 
 ### DB 배포 권장 패턴
 
-1. 강한 패스워드 생성 → DB preset 의 `rootpassword` 에 **plain** 으로 박고 `ctype apply` 후 Cloudtype 이 `<deployment-name>-root-password` 시크릿을 자동 등록합니다.
+1. 강한 패스워드 생성 → DB preset 의 `rootpassword` 에 **plain** 으로 박고 `ctype apply`. PostgreSQL 같은 DB preset 은 정상 흐름에서 별도 Running polling 없이 다음 단계로 진행합니다. Cloudtype 이 `<deployment-name>-root-password` 시크릿을 자동 등록합니다.
 2. 앱 서비스의 `env[]` 에서 다음을 박습니다.
    - `DB_HOST` = deployment 이름 (평문)
    - `DB_PORT` = preset 표준 포트 (평문)
@@ -167,6 +167,8 @@ ctype apply -f .cloudtype/postgres.yaml
 ctype apply -f .cloudtype/api.yaml
 ctype apply -f .cloudtype/web.yaml
 ```
+
+프론트/백엔드 분리 배포에서는 백엔드 URL 을 프론트엔드 public env 에 넣고, 프론트엔드 URL 을 백엔드 `CORS_ORIGIN` 에 넣습니다. URL 순환이 있으므로 정석 흐름은 백엔드 → 프론트엔드 → 백엔드 CORS 갱신입니다. 인증 없는 프로토타입이나 공개 API 는 `CORS_ORIGIN=*` 을 쓸 수 있고, 쿠키/세션/사용자 데이터가 있으면 origin 을 명시합니다.
 
 ---
 

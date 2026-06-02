@@ -14,8 +14,9 @@
 
 - `ctype` CLI (`npm i -g @cloudtype/cli`)
 - `CLOUDTYPE_API_KEY` 환경변수 (Cloudtype 콘솔에서 발급)
+- `GITHUB_TOKEN` 환경변수 (GitHub personal access token classic, `repo` scope)
 - Python 3 + `pip install websockets` (로그 helper 사용 시)
-- GitHub 액세스 (코드 push 용)
+- `git` (코드 push 용). `gh` 는 있으면 활용하지만 기본 전제는 아님
 
 ## 흐름
 
@@ -26,7 +27,7 @@
 3. 코드 작성       표준 진입점 + 환경변수 기반 설정
 4. GitHub push     repo 확보
 5. 배포            DB → 시크릿/env → 백엔드 (→ 프론트)
-6. 상태 확인       Running + URL 응답
+6. 상태 확인       URL 응답 + 필요 시 상태 확인
 7. 실패 대응       로그 → 진단 → 수정 → 재배포
 ```
 
@@ -37,7 +38,8 @@ ctype-skill/
 ├── SKILL.md              # 진입점 (전체 흐름 + 정책)
 ├── reference/
 │   ├── yaml.md           # app.yaml 필드 가이드, preset 옵션, 시크릿 문법, DB 패턴
-│   └── api.md            # 빌드/실행 로그 WebSocket API
+│   ├── api.md            # 빌드/실행 로그 WebSocket API
+│   └── cli.md            # ctype JSON 출력 구조, 상태 파싱
 ├── scripts/
 │   └── logs.py           # 빌드/실행 로그 클라이언트
 ├── README.md
