@@ -37,13 +37,20 @@ allowed-tools: Bash(ctype:*), Bash(curl:*), Bash(python:*), Bash(python3:*), Bas
 스킬 진입 시 멱등적으로 한 번. 이미 되어 있으면 건너뜁니다.
 
 ```bash
+# Cloudtype CLI 설치 + 인증
 which ctype >/dev/null 2>&1 || npm i -g @cloudtype/cli
 ctype whoami >/dev/null 2>&1 || ctype login -t "$CLOUDTYPE_API_KEY"
+
+# GitHub 인증 (4단계 push 시 사용). 둘 중 하나만 준비.
+#   - GITHUB_PAT 환경변수 (repo 스코프)
+#   - 또는 gh auth login
 ```
 
 로그 helper 를 사용할 환경이라면 `pip install websockets` 도 한 번 확인합니다.
 
 `CLOUDTYPE_API_KEY` 가 비어 있으면 사용자에게 발급 (Cloudtype 콘솔) 후 export 안내. 키 하나로 CLI 와 보조 API 가 모두 인증됩니다.
+
+GitHub 인증이 준비되지 않은 경우 4단계 push 시점에 발견되므로, 그때 사용자에게 PAT 발급 또는 `gh auth login` 을 안내해도 됩니다.
 
 ---
 
@@ -132,21 +139,14 @@ DB 연결 코드는 단일 환경변수 (예: `DATABASE_URL=postgresql://root:<p
 
 ## 4. GitHub push
 
-작성한 코드를 GitHub repo 에 push 합니다. push 후 다음을 확보합니다.
+작성한 코드를 GitHub repo 에 push 합니다. push 는 `GITHUB_PAT` 환경변수 (`repo` 스코프 포함) 또는 `gh auth status` 가 로그인 상태임을 전제로 합니다. 둘 다 비어 있으면 사용자에게 PAT 발급 또는 `gh auth login` 을 안내합니다.
+
+push 후 다음을 확보합니다.
 
 - repo URL (예: `https://github.com/<owner>/<repo>`)
-- 사용할 branch (기본 `main`)
+- 사용한 branch (기본 `main`)
 
-repo 가 Cloudtype 콘솔의 GitHub 연동 계정 소속이라면 그대로 5단계로 진행합니다. 다른 계정 소속이면 사용자에게 콘솔에서 연동 추가를 요청합니다.
-
-사용자가 repo URL 대신 이름/키워드만 제공한 경우:
-
-```bash
-python scripts/find_repo.py "<키워드>"          # 매칭 후보 확인
-python scripts/find_repo.py --list               # 전체 목록
-```
-
-세부: [`reference/api.md`](reference/api.md) 의 "GitHub repo 조회".
+repo 가 Cloudtype 콘솔의 GitHub 연동 계정 소속이면 그대로 5단계로 진행합니다. 소속이 아니면 사용자에게 콘솔에서 연동 추가를 요청합니다.
 
 ---
 
