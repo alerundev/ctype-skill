@@ -37,6 +37,7 @@
 ctype-skill/
 ├── SKILL.md              # 진입점 (전체 흐름 + 정책)
 ├── reference/
+│   ├── github.md         # GitHub token 기반 repo 생성/commit/push/branch 조회
 │   ├── yaml.md           # app.yaml 필드 가이드, preset 옵션, 시크릿 문법, DB 패턴
 │   ├── api.md            # 빌드/실행 로그 WebSocket API
 │   └── cli.md            # ctype JSON 출력 구조, 상태 파싱
