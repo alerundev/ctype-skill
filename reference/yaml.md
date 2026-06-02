@@ -84,19 +84,6 @@ context:
   preset: dockerfile
 ```
 
-### Container (외부 이미지)
-
-```yaml
-app: container
-options:
-  image: nginx:1.25
-  ports: "80"
-context:
-  preset: container
-```
-
----
-
 ## 시크릿 참조 규칙
 
 `{secret: <KEY>}` 형태의 참조는 **오직 다음 자리에서만** 동작합니다:

@@ -58,7 +58,7 @@ wss://api.cloudtype.io/project/logs          # 실행 로그
     }
   },
   "headers": {
-    "Authorization": "Bearer <CLOUDTYPE_APIKEY>",
+    "Authorization": "Bearer <CLOUDTYPE_API_KEY>",
     "Content-Type": "application/json",
     "Accept": "application/json, text/plain, */*"
   }
@@ -79,7 +79,7 @@ wss://api.cloudtype.io/project/logs          # 실행 로그
 | `project` | `ctype use` 출력의 `.../<project>:...` |
 | `stage` | `ctype use` 출력의 `...:<stage>` |
 | `deployment` | `app.yaml` 의 `name` 필드 |
-| `CLOUDTYPE_APIKEY` | 환경변수 |
+| `CLOUDTYPE_API_KEY` | 환경변수 |
 
 `scripts/logs.py` 가 `ctype use` 를 호출해 자동 파싱합니다.
 

@@ -1,27 +1,23 @@
 ---
 name: ctype-skill
 description: >
-  Cloudtype 에 GitHub repo (또는 Docker 이미지) 를 배포합니다. app.yaml 작성 →
-  ctype apply → 상태 확인 → (실패 시) 빌드/실행 로그 진단 → 재배포. 사용자가
-  Cloudtype, ctype, cloudtype.app 도메인을 언급하거나 서비스/DB 배포를 요청할
-  때 사용합니다. 코드 작성·수정·push 는 범위 밖입니다.
+  Cloudtype 에 GitHub repo 를 배포합니다. app.yaml 작성 → ctype apply → 상태
+  확인 → (실패 시) 빌드/실행 로그 진단 → 재배포. 사용자가 Cloudtype, ctype,
+  cloudtype.app 도메인을 언급하거나 서비스/DB 배포를 요청할 때 사용합니다.
 allowed-tools: Bash(ctype:*), Bash(curl:*), Bash(python:*), Bash(python3:*), Bash(npm:*), Bash(which:*)
 ---
 
 # ctype-skill
 
-GitHub repo 또는 외부 이미지를 [Cloudtype](https://cloudtype.io) 에 배포하는 일만 합니다.
-
-**범위 안**: `app.yaml` 작성, `ctype apply`, 시크릿 등록, 빌드/실행 로그로 실패 진단, 설정 수정 후 재배포.
-
-**범위 밖**: 코드 작성·수정, `git push`, 새 GitHub repo 생성, 디자인/아키텍처 결정. 이 스킬은 push 가 끝난 시점부터 진입합니다.
+GitHub repo 를 [Cloudtype](https://cloudtype.io) 에 배포하는 일만 합니다.
 
 ---
 
-## 🚀 흐름 (6단계)
+## 🚀 흐름
 
 ```
-1. 인증 / 컨텍스트     ctype whoami ; ctype use
+0. 사전 준비           CLI 설치 + 로그인 (1회)
+1. 컨텍스트 파악       ctype whoami ; ctype projects
 2. preset 확인         ctype presets
 3. app.yaml 작성       .cloudtype/app.yaml
 4. 배포                ctype apply
@@ -29,32 +25,50 @@ GitHub repo 또는 외부 이미지를 [Cloudtype](https://cloudtype.io) 에 배
 6. 실패 시 진단/재배포  → 본 문서 "실패 대응"
 ```
 
-해피패스는 1~5 로 끝. 실패가 발생할 때만 6 으로 들어갑니다.
+해피패스는 0~5 로 끝. 실패가 발생할 때만 6 으로.
 
 ---
 
-## 1. 인증 / 컨텍스트
+## 0. 사전 준비
+
+스킬 진입 시 무조건 한 번. 명령 실행 후 깨지는 식이 아니라 흐름 전에 보장합니다.
 
 ```bash
-which ctype                       # 설치 확인
-ctype whoami                      # 인증 + 로그인 계정
-ctype use                         # 현재 컨텍스트 (@scope/project:stage)
+# CLI 설치 (없을 때만)
+npm i -g @cloudtype/cli
+
+# 로그인 (세션마다 1회)
+ctype login -t "$CLOUDTYPE_API_KEY"
 ```
 
-미설치: `npm i -g @cloudtype/cli`. 미인증: `ctype login -t "$CLOUDTYPE_APIKEY"`.
+환경변수 `CLOUDTYPE_API_KEY` 가 비어 있으면 사용자에게 발급 (Cloudtype 콘솔) 후 export 안내. 키 하나로 CLI 와 보조 API (로그 조회) 모두 인증됩니다.
 
-프로젝트가 없으면 생성:
+---
+
+## 1. 컨텍스트 파악
 
 ```bash
-# cluster 이름은 다음으로 조회 (보통 결과 1개)
-curl -sS -H "Authorization: Bearer $CLOUDTYPE_APIKEY" \
+ctype whoami                      # 로그인 계정 확인
+ctype projects                    # scope + 기존 프로젝트 목록
+```
+
+`ctype projects` 첫 줄에 `Current scope is "@<scope>"` 형태로 scope 가 박혀 있습니다 — 별도 조회 불필요.
+
+### 프로젝트가 없거나 새로 만들어야 할 때
+
+```bash
+# 1) cluster 이름 조회 (CLI 에 cluster 조회 명령이 없어 API 사용. 보통 결과 1개)
+curl -sS -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
   "https://api.cloudtype.io/scope/<scope>/cluster"
 
+# 2) 프로젝트 생성 (cluster 명시 필수)
 ctype project create <name> -s <scope> -c <cluster-name>
+
+# 3) 컨텍스트 전환
 ctype use @<scope>/<name>:main
 ```
 
-`stage` 는 명시 없으면 `main`.
+`stage` 는 명시 없으면 `main`. 기존 프로젝트에 배포할 때는 1~2 건너뛰고 3 만.
 
 ---
 
@@ -157,7 +171,7 @@ python scripts/logs.py run <deployment> -p
 - `Running` 도 못 가본 (빌드/시작 실패) = **빌드 로그 먼저**
 - `Running` 이었다가 떨어진 / 응답 없음 = **실행 로그 (특히 `-p` 로 직전 로그)**
 
-스크립트는 `ctype use` 의 컨텍스트 (scope/project/stage) 와 `CLOUDTYPE_APIKEY` 환경변수를 자동으로 사용합니다. API 호출용 추가 정보 필요 없음.
+스크립트는 `ctype use` 의 컨텍스트 (scope/project/stage) 와 `CLOUDTYPE_API_KEY` 환경변수를 자동으로 사용합니다. API 호출용 추가 정보 필요 없음.
 
 API 프로토콜 세부: [`reference/api-logs.md`](reference/api-logs.md).
 
@@ -205,7 +219,7 @@ Cloudtype 환경 컨벤션 중 자주 놓치는 것: Cloudtype 은 ingress 뒤. 
 **1단계 — 잔여 조회**:
 
 ```bash
-curl -sS -H "Authorization: Bearer $CLOUDTYPE_APIKEY" \
+curl -sS -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
   "https://api.cloudtype.io/scope/<scope>/resource/available"
 ```
 
@@ -282,15 +296,6 @@ DB preset 의 `rootpassword` 는 **plain only** (시크릿 참조 객체 금지)
 - 시크릿 덮어쓰기 (이미 존재하는 키)
 - 삭제 (`ctype remove`, 프로젝트/스테이지 삭제)
 - 코드 수정 (범위 밖)
-
----
-
-## 🔐 인증 — `CLOUDTYPE_APIKEY` 하나로 둘 다
-
-- **CLI**: `ctype login -t "$CLOUDTYPE_APIKEY"` 한 번 (이후 `ctype whoami` 로 확인)
-- **로그 API**: `scripts/logs.py` 가 환경변수에서 자동으로 읽음
-
-키 발급은 Cloudtype 콘솔에서.
 
 ---
 

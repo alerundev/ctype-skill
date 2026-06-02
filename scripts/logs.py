@@ -12,7 +12,7 @@ CLI 는 실행 로그 (running container stdout) 도 보여주지만,
     python scripts/logs.py run <deployment> -f     # 실행 로그 follow
 
 필요한 환경:
-    CLOUDTYPE_APIKEY 환경변수
+    CLOUDTYPE_API_KEY 환경변수
     ctype 가 PATH 에 있고 `ctype use` 로 컨텍스트 설정됨
     pip install websockets
 """
@@ -58,9 +58,9 @@ def get_context() -> Tuple[str, str, str]:
 
 
 def get_apikey() -> str:
-    key = os.environ.get("CLOUDTYPE_APIKEY", "").strip()
+    key = os.environ.get("CLOUDTYPE_API_KEY", "").strip()
     if not key:
-        print("ERROR: CLOUDTYPE_APIKEY 환경변수가 비어 있습니다.", file=sys.stderr)
+        print("ERROR: CLOUDTYPE_API_KEY 환경변수가 비어 있습니다.", file=sys.stderr)
         sys.exit(2)
     return key
 
