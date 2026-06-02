@@ -9,10 +9,6 @@ Cloudtype scope 이름과 GitHub owner 이름은 다를 수 있습니다. repo o
 ```bash
 curl -fsS \
   -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
-  "https://api.cloudtype.io/oauth/github/has"
-
-curl -fsS \
-  -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
   "https://api.cloudtype.io/oauth/github/accounts"
 ```
 
@@ -67,7 +63,7 @@ curl -fsS -X POST \
 
 ## commit / push
 
-`GITHUB_TOKEN` 은 환경이 git 에 사용할 수 있게 주입한다고 가정하고 표준 git 흐름을 우선합니다. 샌드박스에는 전역 git author/signing 설정이 없을 수 있으므로 repo local 로 설정합니다.
+managed-agent 샌드박스에는 보통 credential helper 와 전역 git author/signing 설정이 없습니다. repo local 설정 후 토큰이 포함된 HTTPS remote 를 임시로 사용합니다. `<github-username>` 은 위 GitHub `/user` 응답의 `login`, `<owner>` 는 repo owner 입니다. push 후 remote 를 깨끗한 URL 로 되돌립니다.
 
 ```bash
 git config --local user.name "<github-username>"
@@ -77,18 +73,12 @@ git add .
 git commit --no-gpg-sign -m "Initial Cloudtype deployment"
 git branch -M main
 git remote add origin https://github.com/<owner>/<repo>.git
-GIT_TERMINAL_PROMPT=0 git push -u origin main
-```
-
-credential helper 가 없는 샌드박스에서 push 가 인증 프롬프트로 멈추면 토큰이 포함된 HTTPS remote 를 임시로 사용합니다. `<github-username>` 은 위 GitHub `/user` 응답의 `login`, `<owner>` 는 repo owner 입니다. 보통 둘은 같습니다. push 후 remote 를 깨끗한 URL 로 되돌립니다.
-
-```bash
 git remote set-url origin "https://<github-username>:${GITHUB_TOKEN}@github.com/<owner>/<repo>.git"
 GIT_TERMINAL_PROMPT=0 git push -u origin main
 git remote set-url origin https://github.com/<owner>/<repo>.git
 ```
 
-이미 remote 가 있으면 `git remote set-url origin https://github.com/<owner>/<repo>.git`. `git push` 가 timeout 되면 같은 명령을 길게 반복하지 말고 인증 프롬프트/hang 여부와 환경의 git credential 주입을 확인합니다. Contents API 나 zip 업로드를 기본 fallback 으로 사용하지 않습니다.
+`git branch -M main` 은 remote 설정/push 전에 실행합니다. 그래야 `context.git.ref: main` 과 실제 branch 가 어긋나지 않습니다. Contents API 나 zip 업로드를 기본 fallback 으로 사용하지 않습니다.
 
 ## branch 목록 조회
 

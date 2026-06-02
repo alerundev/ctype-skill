@@ -25,7 +25,7 @@ allowed-tools: Bash(ctype:*), Bash(curl:*), Bash(python:*), Bash(python3:*), Bas
 
 ```bash
 which ctype >/dev/null 2>&1 || npm i -g @cloudtype/cli
-ctype whoami >/dev/null 2>&1 || ctype login -t "$CLOUDTYPE_API_KEY"
+NODE_NO_WARNINGS=1 ctype whoami -o json >/tmp/ctype-whoami.json 2>/dev/null || { ctype login -t "$CLOUDTYPE_API_KEY"; NODE_NO_WARNINGS=1 ctype whoami -o json >/tmp/ctype-whoami.json; }
 : "${GITHUB_TOKEN:?set GitHub personal access token classic as GITHUB_TOKEN}"
 which git >/dev/null 2>&1
 python3 -c 'import websockets' >/dev/null 2>&1 || python3 -m pip install -q websockets
@@ -40,11 +40,11 @@ Cloudtype GitHub 연동 확인과 repo 생성/commit/push 명령은 [`reference/
 ## 1. 컨텍스트 확보
 
 ```bash
-ctype whoami -o json              # scope 후보
+python3 -c 'import json; print("\n".join(json.load(open("/tmp/ctype-whoami.json"))["scopes"]))'
 ctype projects                    # 기존 프로젝트
 ```
 
-scope 는 `ctype whoami -o json` 의 `scopes` 배열에서 얻습니다. stage 는 명시 없으면 `main`.
+scope 는 0단계에서 저장한 `/tmp/ctype-whoami.json` 의 `scopes` 배열에서 얻습니다. stage 는 명시 없으면 `main`.
 
 새 프로젝트가 필요하고 `ctype projects` 가 생성 안내만 출력하면 cluster 조회 후 생성합니다. cluster API 응답은 배열입니다.
 
@@ -85,7 +85,7 @@ DB 를 사용하는 앱은 DB 연결/초기화 실패를 숨기지 않습니다.
 - repo URL: `https://github.com/<owner>/<repo>`
 - branch: 기본 `main`
 
-기본 경로는 `GITHUB_TOKEN` 이 환경에 주입된 상태에서 표준 git 흐름을 사용하는 방식입니다. credential helper 가 없는 샌드박스에서는 토큰이 포함된 HTTPS remote 를 임시로 사용할 수 있고, push 후 remote 를 깨끗한 URL 로 되돌립니다. 샌드박스의 author/signing 오류를 피하기 위해 repo local git user 와 signing 을 설정하고 `--no-gpg-sign` 으로 commit 합니다. 세부 명령은 [`reference/github.md`](reference/github.md).
+managed-agent 샌드박스에서는 credential helper 가 없다고 보고 토큰이 포함된 HTTPS remote 를 임시로 사용한 뒤 push 후 remote 를 깨끗한 URL 로 되돌립니다. 샌드박스의 author/signing 오류를 피하기 위해 repo local git user 와 signing 을 설정하고 `--no-gpg-sign` 으로 commit 합니다. 세부 명령은 [`reference/github.md`](reference/github.md).
 
 Cloudtype scope 이름과 GitHub owner 이름은 다를 수 있습니다. `context.git.url` 과 repo 생성 owner 는 scope 가 아니라 Cloudtype GitHub 연동 계정의 `name` 을 사용합니다. token owner 는 GitHub `/user` 로 확인합니다. 연동 목록이 비어 있거나 owner 가 맞지 않으면 사용자에게 콘솔에서 GitHub 연동을 추가하도록 요청합니다.
 
