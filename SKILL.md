@@ -31,10 +31,10 @@ which git >/dev/null 2>&1
 ```
 
 - `CLOUDTYPE_API_KEY`: Cloudtype CLI + 보조 API 인증.
-- `GITHUB_TOKEN`: GitHub personal access token classic, `repo` scope. `gh` 로그인은 있으면 활용하는 보조 경로일 뿐 기본 전제는 아닙니다.
+- `GITHUB_TOKEN`: Cloudtype 콘솔에 OAuth 연동된 GitHub 계정에서 발급한 personal access token classic, `repo` scope.
 - 로그 helper 사용 시 `pip install websockets` 확인.
 
-GitHub repo 생성/commit/push 명령은 [`reference/github.md`](reference/github.md)를 따릅니다.
+Cloudtype GitHub 연동 확인과 repo 생성/commit/push 명령은 [`reference/github.md`](reference/github.md)를 따릅니다.
 
 ## 1. 컨텍스트 확보
 
@@ -45,11 +45,12 @@ ctype projects                    # 기존 프로젝트
 
 scope 는 `ctype whoami -o json` 의 `scopes` 배열에서 얻습니다. stage 는 명시 없으면 `main`.
 
-새 프로젝트가 필요하고 `ctype projects` 가 생성 안내만 출력하면 cluster 조회 후 생성합니다.
+새 프로젝트가 필요하고 `ctype projects` 가 생성 안내만 출력하면 cluster 조회 후 생성합니다. cluster API 응답은 배열입니다.
 
 ```bash
 curl -sS -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
-  "https://api.cloudtype.io/scope/<scope>/cluster"
+  "https://api.cloudtype.io/scope/<scope>/cluster" \
+  | python3 -c 'import json,sys; [print(c["name"]) for c in json.load(sys.stdin)]'
 ctype project create <name> -s <scope> -c <cluster-name>
 ctype use @<scope>/<name>:main
 ```
@@ -74,6 +75,8 @@ ctype use @<scope>/<name>:main
 
 같은 stage 의 서비스는 deployment 이름으로 통신합니다: `postgres:5432`, `redis:6379`, `mongo:27017`. DB 연결 코드는 `DATABASE_URL` 하나 또는 위 DB env 조합을 읽도록 둡니다.
 
+DB 를 사용하는 앱은 DB 연결/초기화 실패를 숨기지 않습니다. health/readiness endpoint 는 DB 연결과 필수 초기화 상태를 반영하도록 작성합니다.
+
 ## 4. GitHub push
 
 작성한 코드를 GitHub repo 에 push 하고 다음을 확보합니다.
@@ -81,9 +84,9 @@ ctype use @<scope>/<name>:main
 - repo URL: `https://github.com/<owner>/<repo>`
 - branch: 기본 `main`
 
-기본 경로는 `GITHUB_TOKEN` 하나입니다. 토큰은 remote URL 에 박지 말고 push 시 HTTP header 로만 전달합니다. 커밋 서명 서버가 없는 샌드박스를 위해 repo local signing 을 끄고 `--no-gpg-sign` 으로 commit 합니다. 세부 명령은 [`reference/github.md`](reference/github.md).
+기본 경로는 `GITHUB_TOKEN` 이 환경에 주입된 상태에서 표준 git 흐름을 사용하는 방식입니다. 토큰을 remote URL 에 직접 박지 않습니다. 커밋 서명 서버가 없는 샌드박스를 위해 repo local signing 을 끄고 `--no-gpg-sign` 으로 commit 합니다. 세부 명령은 [`reference/github.md`](reference/github.md).
 
-repo 가 Cloudtype 콘솔의 GitHub 연동 계정 소속이면 그대로 배포합니다. 아니면 사용자에게 콘솔에서 연동 추가를 요청합니다.
+Cloudtype scope 이름과 GitHub owner 이름은 다를 수 있습니다. repo owner 는 Cloudtype GitHub 연동 계정 기준으로 확인합니다. 연동 목록이 비어 있거나 repo owner 가 다르면 사용자에게 콘솔에서 GitHub 연동을 추가하도록 요청합니다.
 
 ## 5. 배포
 
@@ -120,7 +123,7 @@ ctype stage secret STRIPE_SECRET_KEY "<값>"
 ctype apply -f .cloudtype/api.yaml
 ```
 
-`app`, `ports`, `install`, `start` 는 preset 디폴트를 우선합니다. 진입점이 표준이면 `options.start` 를 생략합니다.
+`install`, `build`, `start` 는 preset 디폴트를 우선하고, 소스코드 구조상 필요한 경우에만 명시합니다.
 
 ### 5.4 프론트 분리 배포
 
@@ -134,6 +137,14 @@ ctype apply -f .cloudtype/api.yaml
 
 ## 6. 상태 확인
 
+HTTP deployment 는 `ctype apply` 직후 `ctype routes` 에 보이지 않을 수 있습니다. 빌드가 끝난 뒤 HTTP route 가 생성됩니다.
+
+```bash
+python3 /workspace/skills/ctype-skill/scripts/logs.py build <deployment>
+```
+
+빌드 로그가 실패로 끝나면 그 오류 메시지로 7단계를 진행합니다. 빌드가 성공하면 시작 단계로 넘어갑니다.
+
 ```bash
 ctype routes
 ```
@@ -142,30 +153,36 @@ ctype routes
 
 1. HTTP deployment 의 route 가 `bound`.
 2. URL GET 이 2xx / 3xx.
+3. DB 를 사용하는 앱은 DB-backed endpoint 또는 대표 사용자 흐름 하나가 작성한 코드의 기대 응답과 일치.
 
-DB preset 은 정상 흐름에서 polling 하지 않습니다. HTTP 응답이 실패하거나 배포가 의심스러울 때만 `ctype list -o json` 을 확인합니다. deployment status 는 `stat.status` 입니다. 자세한 파싱은 [`reference/cli.md`](reference/cli.md).
+빌드 성공 후 route 가 없거나 `bound` 가 아니면 30초 주기로 다시 확인합니다. 계속 시작 중이면 실행 로그를 확인합니다. 포트 미입력/오입력은 이 단계에서 자주 드러납니다.
 
-`Stopped` / `Failed` 는 즉시 7단계. `Pending` 이 길 때만 제한된 횟수로 재확인합니다.
+```bash
+python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment>
+```
+
+200 OK 라도 응답 내용이 예상과 다르면 완료로 보지 않고 실행 로그를 확인합니다. DB preset 은 정상 흐름에서 polling 하지 않습니다. HTTP 응답이 실패하거나 배포가 의심스러울 때만 `NODE_NO_WARNINGS=1 ctype list -o json` 을 확인합니다. deployment status 는 `stat.status` 입니다. 자세한 파싱은 [`reference/cli.md`](reference/cli.md).
 
 ## 7. 실패 대응
 
 ### 7.1 로그
 
 ```bash
-python scripts/logs.py build <deployment>
-python scripts/logs.py run <deployment>
-python scripts/logs.py run <deployment> -f
-python scripts/logs.py run <deployment> -p
+python3 /workspace/skills/ctype-skill/scripts/logs.py build <deployment>
+python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment>
+python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment> -f
+python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment> -p
 ```
 
-HTTP deployment 가 `Running` 전이면 빌드 로그 먼저. `Running` 이후 응답 실패/재시작이면 실행 로그. DB deployment 는 백엔드 연결/인증 실패가 있을 때 확인합니다.
+HTTP deployment 는 apply 직후 빌드 로그를 먼저 봅니다. 빌드 실패는 빌드 로그로 해결합니다. 빌드 성공 후 route 가 없거나 시작 중에 머무르면 실행 로그를 확인합니다. `Running` 이후 응답 실패/재시작도 실행 로그를 봅니다. DB deployment 는 백엔드 연결/인증 실패가 있을 때 확인합니다.
 
 ### 7.2 흔한 진단
 
 - 브랜치 불일치: GitHub branch 목록 조회 → `context.git.ref` 수정. 명령은 [`reference/github.md`](reference/github.md).
-- 포트/헬스체크 실패: 실행 로그의 listen 포트 확인 → `options.ports` / `healthz` 수정.
+- 포트/헬스체크 실패: 빌드 성공 후 시작 중에 머무르거나 route 가 안 붙음 → 실행 로그의 listen 포트 확인 → `options.ports` / `healthz` 수정.
 - DB connection refused: `DB_HOST` deployment 이름, `DB_PORT` preset 포트 확인.
 - DB auth failed: `DB_PASSWORD` 가 `<db-deployment>-root-password` 자동 시크릿을 가리키는지 확인. 패스워드 변경은 DB 재생성 필요.
+- HTTP 200 이지만 응답 내용이 예상과 다름: 실행 로그에서 DB 초기화/마이그레이션 오류 확인.
 - 시크릿/env 누락: stage secret/variable 또는 yaml env 수정.
 - 빌드 실패: 빌드 로그 확인 → 코드/yaml 수정.
 - 리소스 부족: 아래 리소스 흐름.

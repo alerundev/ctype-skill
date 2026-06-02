@@ -17,8 +17,6 @@ app: node@24
 
 options:                          # preset 별 옵션 (필드는 preset 마다 다름)
   ports: "3000"                   # 노출 포트 (string 으로 권장)
-  install: npm ci                 # 빌드 명령
-  start: npm start                # 시작 명령
   buildenv: []                    # 빌드 시점 환경변수
   env:                            # 런타임 환경변수
     - name: NODE_ENV
@@ -46,13 +44,13 @@ context:                          # repo 연결 / preset 메타
 ```yaml
 options:
   ports: "3000"
-  install: npm ci                 # 또는 pip install -r requirements.txt
-  start: npm start                # 또는 python app.py
   healthz: /health
   env:
     - name: NODE_ENV
       value: production
 ```
+
+`install`, `build`, `start` 는 기본적으로 생략합니다. 소스코드의 package manager, scripts, lockfile 구성을 보고 preset 기본값으로 부족할 때만 명시합니다.
 
 ### PostgreSQL / MariaDB / MySQL / MongoDB
 
