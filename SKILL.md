@@ -50,13 +50,15 @@ ctype whoami >/dev/null 2>&1 || ctype login -t "$CLOUDTYPE_API_KEY"
 ## 1. 컨텍스트 확보
 
 ```bash
-ctype whoami                      # 로그인 계정
-ctype projects                    # scope + 기존 프로젝트 목록
+ctype whoami -o json              # scopes 배열에 사용 가능한 scope
+ctype projects                    # 기존 프로젝트 목록
 ```
 
-`ctype projects` 첫 줄에 `Current scope is "@<scope>"` 형태로 scope 가 박혀 있어 별도 조회가 필요 없습니다.
+scope 는 `ctype whoami -o json` 의 `scopes` 배열에서 얻습니다. `ctype projects` 의 첫 줄에도 `Current scope is "@<scope>"` 형태로 나오지만, 프로젝트가 한 개도 없는 경우에는 그 행이 나오지 않으므로 `whoami` 쪽이 안정적입니다.
 
 ### 새 프로젝트가 필요할 때
+
+`ctype projects` 가 `Create a project first with the command ...` 메시지만 출력하면 프로젝트가 없는 상태입니다. 아래 흐름으로 생성합니다.
 
 ```bash
 # cluster 이름 조회 (보통 결과 1개)
