@@ -15,7 +15,7 @@
 - `ctype` CLI (`npm i -g @cloudtype/cli`)
 - `CLOUDTYPE_API_KEY` 환경변수 (Cloudtype 콘솔에서 발급)
 - `GITHUB_TOKEN` 환경변수 (GitHub personal access token classic, `repo` scope)
-- Python 3 + `pip install websockets` (로그 helper 사용 시)
+- Python 3 + `websockets` (0단계에서 설치 확인)
 - `git` (코드 push 용). `gh` 는 있으면 활용하지만 기본 전제는 아님
 
 ## 흐름

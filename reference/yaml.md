@@ -57,7 +57,7 @@ options:
 ```yaml
 options:
   rootusername: root              # plain string only
-  rootpassword: "<plain-password>"  # plain string only — secret 객체 X
+  rootpassword: "<lowercase-digits-password>"  # plain string, a-z0-9 only — secret 객체 X
   database: mydb                  # 초기 DB 이름 (선택)
   # tz: Asia/Seoul                # 시간대 (선택)
 ```
@@ -94,7 +94,7 @@ context:
 올바른 예:
 ```yaml
 options:
-  rootpassword: "Lp7zXq..."       # plain ✅
+  rootpassword: "m7q9x2k4p6v8n3r5t1w0a9s7d2f4h6j8"  # plain, a-z0-9 ✅
   env:
     - name: DB_PASSWORD
       secret: DB_PASSWORD         # ✅ env[] 안에서 참조
@@ -110,14 +110,24 @@ options:
 ### 시크릿 등록 (CLI)
 
 ```bash
-ctype stage secret DB_PASSWORD "Lp7zXq..."     # 저장
+ctype stage secret DB_PASSWORD "m7q9x2k4..."   # 저장
 ctype stage variable LOG_LEVEL info             # 평문 (env 와 동일하게 참조)
 ctype stage secret DB_PASSWORD -r               # 삭제
 ```
 
 ### DB 배포 권장 패턴
 
-1. 강한 패스워드 생성 → DB preset 의 `rootpassword` 에 **plain** 으로 박고 `ctype apply`. PostgreSQL 같은 DB preset 은 정상 흐름에서 별도 Running polling 없이 다음 단계로 진행합니다. Cloudtype 이 `<deployment-name>-root-password` 시크릿을 자동 등록합니다.
+패스워드 생성 예:
+
+```bash
+python3 - <<'PY'
+import secrets, string
+chars = string.ascii_lowercase + string.digits
+print(''.join(secrets.choice(chars) for _ in range(32)))
+PY
+```
+
+1. 강한 패스워드 생성 → DB preset 의 `rootpassword` 에 **plain** 으로 박고 `ctype apply`. 패스워드는 영어 소문자와 숫자만 사용합니다. PostgreSQL 같은 DB preset 은 정상 흐름에서 별도 Running polling 없이 다음 단계로 진행합니다. Cloudtype 이 `<deployment-name>-root-password` 시크릿을 자동 등록합니다.
 2. 앱 서비스의 `env[]` 에서 다음을 박습니다.
    - `DB_HOST` = deployment 이름 (평문)
    - `DB_PORT` = preset 표준 포트 (평문)
@@ -175,4 +185,4 @@ ctype apply -f .cloudtype/web.yaml
 - `ports` 는 **string** (`"3000"`). 숫자도 받지만 일관성 위해 string 권장.
 - `app:` 의 버전 (`node@24`) 은 `ctype presets` 으로 확인. 명시 안 하면 최신 안정 버전.
 - `env[].value` 는 항상 string. 숫자라도 `"production"` 같이 따옴표.
-- DB preset 의 `rootpassword` 는 **plain only** — 시크릿 참조 객체 금지.
+- DB preset 의 `rootpassword` 는 **plain only** 이며 영어 소문자와 숫자만 사용 — 시크릿 참조 객체 금지.

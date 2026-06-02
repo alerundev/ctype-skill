@@ -28,11 +28,12 @@ which ctype >/dev/null 2>&1 || npm i -g @cloudtype/cli
 ctype whoami >/dev/null 2>&1 || ctype login -t "$CLOUDTYPE_API_KEY"
 : "${GITHUB_TOKEN:?set GitHub personal access token classic as GITHUB_TOKEN}"
 which git >/dev/null 2>&1
+python3 -c 'import websockets' >/dev/null 2>&1 || python3 -m pip install -q websockets
 ```
 
 - `CLOUDTYPE_API_KEY`: Cloudtype CLI + 보조 API 인증.
 - `GITHUB_TOKEN`: Cloudtype 콘솔에 OAuth 연동된 GitHub 계정에서 발급한 personal access token classic, `repo` scope.
-- 로그 helper 사용 시 `pip install websockets` 확인.
+- 로그 helper 는 `websockets` 를 사용하므로 0단계에서 한 번 준비합니다.
 
 Cloudtype GitHub 연동 확인과 repo 생성/commit/push 명령은 [`reference/github.md`](reference/github.md)를 따릅니다.
 
@@ -84,9 +85,9 @@ DB 를 사용하는 앱은 DB 연결/초기화 실패를 숨기지 않습니다.
 - repo URL: `https://github.com/<owner>/<repo>`
 - branch: 기본 `main`
 
-기본 경로는 `GITHUB_TOKEN` 이 환경에 주입된 상태에서 표준 git 흐름을 사용하는 방식입니다. 토큰을 remote URL 에 직접 박지 않습니다. 커밋 서명 서버가 없는 샌드박스를 위해 repo local signing 을 끄고 `--no-gpg-sign` 으로 commit 합니다. 세부 명령은 [`reference/github.md`](reference/github.md).
+기본 경로는 `GITHUB_TOKEN` 이 환경에 주입된 상태에서 표준 git 흐름을 사용하는 방식입니다. credential helper 가 없는 샌드박스에서는 토큰이 포함된 HTTPS remote 를 임시로 사용할 수 있고, push 후 remote 를 깨끗한 URL 로 되돌립니다. 샌드박스의 author/signing 오류를 피하기 위해 repo local git user 와 signing 을 설정하고 `--no-gpg-sign` 으로 commit 합니다. 세부 명령은 [`reference/github.md`](reference/github.md).
 
-Cloudtype scope 이름과 GitHub owner 이름은 다를 수 있습니다. repo owner 는 Cloudtype GitHub 연동 계정 기준으로 확인합니다. 연동 목록이 비어 있거나 repo owner 가 다르면 사용자에게 콘솔에서 GitHub 연동을 추가하도록 요청합니다.
+Cloudtype scope 이름과 GitHub owner 이름은 다를 수 있습니다. `context.git.url` 과 repo 생성 owner 는 scope 가 아니라 Cloudtype GitHub 연동 계정의 `name` 을 사용합니다. token owner 는 GitHub `/user` 로 확인합니다. 연동 목록이 비어 있거나 owner 가 맞지 않으면 사용자에게 콘솔에서 GitHub 연동을 추가하도록 요청합니다.
 
 ## 5. 배포
 
@@ -94,7 +95,7 @@ yaml 은 `.cloudtype/` 아래 컴포넌트별로 둡니다. 자세한 필드와 
 
 ### 5.1 DB 배포
 
-DB 가 필요하면 먼저 DB yaml 을 apply 합니다. DB preset 의 `rootpassword` / `rootusername` / `database` 는 plain 문자열입니다.
+DB 가 필요하면 먼저 DB yaml 을 apply 합니다. DB preset 의 `rootpassword` / `rootusername` / `database` 는 plain 문자열입니다. `rootpassword` 는 영어 소문자와 숫자만 사용합니다.
 
 ```bash
 ctype apply -f .cloudtype/postgres.yaml
@@ -137,13 +138,20 @@ ctype apply -f .cloudtype/api.yaml
 
 ## 6. 상태 확인
 
-HTTP deployment 는 `ctype apply` 직후 `ctype routes` 에 보이지 않을 수 있습니다. 빌드가 끝난 뒤 HTTP route 가 생성됩니다.
+HTTP deployment 는 `ctype apply` 직후 `ctype routes` 에 보이지 않을 수 있습니다. 빌드가 끝나고 서비스가 시작 단계로 넘어간 뒤 HTTP route 가 생성됩니다.
+
+상태는 30초 주기로 확인합니다. deployment status 는 `stat.status` 이며 소문자로 정규화해서 판단합니다.
 
 ```bash
-python3 /workspace/skills/ctype-skill/scripts/logs.py build <deployment>
+NODE_NO_WARNINGS=1 ctype list -o json
 ```
 
-빌드 로그가 실패로 끝나면 그 오류 메시지로 7단계를 진행합니다. 빌드가 성공하면 시작 단계로 넘어갑니다.
+상태별 흐름:
+
+- `pending` / `building` / `deploying` 등 진행 상태: 계속 대기. build log 를 먼저 follow 하지 않습니다.
+- `stopped` / `failed`: 빌드 실패로 보고 build log 확인 → 오류 메시지 기준으로 수정 후 재배포.
+- `starting`: 빌드 성공, 서버 시작 단계. run log 확인. 이상 로그가 있으면 설정/코드 수정 후 재배포, 이상이 없으면 계속 대기.
+- `running`: `ctype routes` 와 URL 테스트로 진행.
 
 ```bash
 ctype routes
@@ -155,13 +163,7 @@ ctype routes
 2. URL GET 이 2xx / 3xx.
 3. DB 를 사용하는 앱은 DB-backed endpoint 또는 대표 사용자 흐름 하나가 작성한 코드의 기대 응답과 일치.
 
-빌드 성공 후 route 가 없거나 `bound` 가 아니면 30초 주기로 다시 확인합니다. 계속 시작 중이면 실행 로그를 확인합니다. 포트 미입력/오입력은 이 단계에서 자주 드러납니다.
-
-```bash
-python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment>
-```
-
-200 OK 라도 응답 내용이 예상과 다르면 완료로 보지 않고 실행 로그를 확인합니다. DB preset 은 정상 흐름에서 polling 하지 않습니다. HTTP 응답이 실패하거나 배포가 의심스러울 때만 `NODE_NO_WARNINGS=1 ctype list -o json` 을 확인합니다. deployment status 는 `stat.status` 입니다. 자세한 파싱은 [`reference/cli.md`](reference/cli.md).
+200 OK 라도 응답 내용이 예상과 다르면 완료로 보지 않고 실행 로그를 확인합니다. DB preset 은 정상 흐름에서 polling 하지 않습니다. JSON 파싱과 status 예시는 [`reference/cli.md`](reference/cli.md).
 
 ## 7. 실패 대응
 
@@ -174,12 +176,12 @@ python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment> -f
 python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment> -p
 ```
 
-HTTP deployment 는 apply 직후 빌드 로그를 먼저 봅니다. 빌드 실패는 빌드 로그로 해결합니다. 빌드 성공 후 route 가 없거나 시작 중에 머무르면 실행 로그를 확인합니다. `Running` 이후 응답 실패/재시작도 실행 로그를 봅니다. DB deployment 는 백엔드 연결/인증 실패가 있을 때 확인합니다.
+HTTP deployment 는 apply 후 30초 주기로 상태를 봅니다. `stopped` / `failed` 는 빌드 로그, `starting` 은 실행 로그, `running` 은 route/URL 테스트입니다. `running` 이후 응답 실패/재시작도 실행 로그를 봅니다. DB deployment 는 백엔드 연결/인증 실패가 있을 때 확인합니다.
 
 ### 7.2 흔한 진단
 
 - 브랜치 불일치: GitHub branch 목록 조회 → `context.git.ref` 수정. 명령은 [`reference/github.md`](reference/github.md).
-- 포트/헬스체크 실패: 빌드 성공 후 시작 중에 머무르거나 route 가 안 붙음 → 실행 로그의 listen 포트 확인 → `options.ports` / `healthz` 수정.
+- 포트/헬스체크 실패: `starting` 에 머무르거나 route 가 안 붙음 → 실행 로그의 listen 포트 확인 → `options.ports` / `healthz` 수정.
 - DB connection refused: `DB_HOST` deployment 이름, `DB_PORT` preset 포트 확인.
 - DB auth failed: `DB_PASSWORD` 가 `<db-deployment>-root-password` 자동 시크릿을 가리키는지 확인. 패스워드 변경은 DB 재생성 필요.
 - HTTP 200 이지만 응답 내용이 예상과 다름: 실행 로그에서 DB 초기화/마이그레이션 오류 확인.
@@ -211,7 +213,7 @@ curl -sS -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
 - `*PASSWORD*`, `*SECRET*`, `*TOKEN*`, `*KEY*`, `*PWD*`, `*PRIVATE*`, `*AUTH*` → `ctype stage secret`, yaml 에서는 `env[].secret`.
 - 자격증명이 포함된 URL/HOST 도 시크릿.
 - `NODE_ENV`, `LOG_LEVEL`, `PORT` 같은 플래그는 평문.
-- DB preset 의 `rootpassword` 는 plain only. 앱은 자동 생성된 `<deployment>-root-password` 를 `env[].secret` 으로 참조합니다.
+- DB preset 의 `rootpassword` 는 plain only 이며 영어 소문자와 숫자만 사용합니다. 앱은 자동 생성된 `<deployment>-root-password` 를 `env[].secret` 으로 참조합니다.
 
 ## 사용자 확인 후 진행
 
