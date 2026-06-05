@@ -9,11 +9,11 @@ Cloudtype scope 이름과 GitHub owner 이름은 다를 수 있습니다. repo o
 ```bash
 curl -fsS \
   -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
-  "https://api.cloudtype.io/oauth/github/has"
+  "${CLOUDTYPE_API_BASE:-https://api.cloudtype.io}/oauth/github/has"
 
 curl -fsS \
   -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
-  "https://api.cloudtype.io/oauth/github/accounts"
+  "${CLOUDTYPE_API_BASE:-https://api.cloudtype.io}/oauth/github/accounts"
 ```
 
 `/oauth/github/accounts` 응답은 배열입니다.

@@ -13,6 +13,7 @@ CLI 는 실행 로그 (running container stdout) 도 보여주지만,
 
 필요한 환경:
     CLOUDTYPE_API_KEY 환경변수
+    CLOUDTYPE_WS_BASE 환경변수 (선택, 기본 wss://api.cloudtype.io)
     ctype 가 PATH 에 있고 `ctype use` 로 컨텍스트 설정됨
     pip install websockets
 """
@@ -33,7 +34,7 @@ except ImportError:
     sys.exit(2)
 
 
-WS_BASE = "wss://api.cloudtype.io"
+DEFAULT_WS_BASE = "wss://api.cloudtype.io"
 ENDPOINTS = {
     "build": "/project/build/logs",
     "run":   "/project/logs",
@@ -65,10 +66,14 @@ def get_apikey() -> str:
     return key
 
 
+def get_ws_base() -> str:
+    return (os.environ.get("CLOUDTYPE_WS_BASE") or DEFAULT_WS_BASE).strip().rstrip("/")
+
+
 async def stream(kind: str, deployment: str, follow: bool, tail: int, previous: bool, timestamps: bool):
     scope, project, stage = get_context()
     key = get_apikey()
-    url = WS_BASE + ENDPOINTS[kind]
+    url = get_ws_base() + ENDPOINTS[kind]
 
     envelope = {
         "type": "prepare",

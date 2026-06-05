@@ -4,10 +4,16 @@
 
 | 용도 | Helper | Endpoint |
 |---|---|---|
-| 빌드 로그 조회 | `python3 /workspace/skills/ctype-skill/scripts/logs.py build <deployment>` | `wss://api.cloudtype.io/project/build/logs` |
-| 실행 로그 조회 | `python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment>` | `wss://api.cloudtype.io/project/logs` |
+| 빌드 로그 조회 | `python3 /workspace/skills/ctype-skill/scripts/logs.py build <deployment>` | `$CLOUDTYPE_WS_BASE/project/build/logs` |
+| 실행 로그 조회 | `python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment>` | `$CLOUDTYPE_WS_BASE/project/logs` |
 
-인증: `CLOUDTYPE_API_KEY` 환경변수.
+환경변수:
+
+- `CLOUDTYPE_API_KEY`: API 키 (Bearer JWT) — 필수.
+- `CLOUDTYPE_API_BASE`: HTTP base URL. 기본값 `https://api.cloudtype.io`.
+- `CLOUDTYPE_WS_BASE`: WS base URL. 기본값 `wss://api.cloudtype.io`.
+
+로그 helper 는 `CLOUDTYPE_WS_BASE` 를 사용합니다.
 
 명령은 앱 프로젝트 디렉터리가 아니라 스킬 설치 경로의 script 를 호출합니다. Porter/managed-agent 기본 경로는 `/workspace/skills/ctype-skill/scripts/logs.py` 입니다.
 
