@@ -25,18 +25,13 @@ allowed-tools: Bash(ctype:*), Bash(curl:*), Bash(python:*), Bash(python3:*), Bas
 
 ```bash
 which ctype >/dev/null 2>&1 || npm i -g @cloudtype/cli
-: "${CLOUDTYPE_API_KEY:?set Cloudtype API key as CLOUDTYPE_API_KEY}"
-export CLOUDTYPE_API_BASE="${CLOUDTYPE_API_BASE:-https://api.cloudtype.io}"
-export CLOUDTYPE_WS_BASE="${CLOUDTYPE_WS_BASE:-wss://api.cloudtype.io}"
-ctype login "$CLOUDTYPE_API_BASE" -t "$CLOUDTYPE_API_KEY"
+ctype whoami >/dev/null 2>&1 || ctype login -t "$CLOUDTYPE_API_KEY"
 : "${GITHUB_TOKEN:?set GitHub personal access token classic as GITHUB_TOKEN}"
 which git >/dev/null 2>&1
 python3 -c 'import websockets' >/dev/null 2>&1 || python3 -m pip install -q websockets
 ```
 
-- `CLOUDTYPE_API_KEY`: API 키 (Bearer JWT) — 필수.
-- `CLOUDTYPE_API_BASE`: HTTP base URL. 기본값 `https://api.cloudtype.io`.
-- `CLOUDTYPE_WS_BASE`: WS base URL. 기본값 `wss://api.cloudtype.io`.
+- `CLOUDTYPE_API_KEY`: Cloudtype CLI + 보조 API 인증.
 - `GITHUB_TOKEN`: Cloudtype 콘솔에 OAuth 연동된 GitHub 계정에서 발급한 personal access token classic, `repo` scope.
 - 로그 helper 는 `websockets` 를 사용하므로 0단계에서 한 번 준비합니다.
 
@@ -55,7 +50,7 @@ scope 는 `ctype whoami -o json` 의 `scopes` 배열에서 얻습니다. stage �
 
 ```bash
 curl -sS -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
-  "${CLOUDTYPE_API_BASE:-https://api.cloudtype.io}/scope/<scope>/cluster" \
+  "https://api.cloudtype.io/scope/<scope>/cluster" \
   | python3 -c 'import json,sys; [print(c["name"]) for c in json.load(sys.stdin)]'
 ctype project create <name> -s <scope> -c <cluster-name>
 ctype use @<scope>/<name>:main
@@ -208,7 +203,7 @@ Cloudtype 은 ingress 뒤에서 동작합니다. Express `trust proxy` 같은 �
 
 ```bash
 curl -sS -H "Authorization: Bearer $CLOUDTYPE_API_KEY" \
-  "${CLOUDTYPE_API_BASE:-https://api.cloudtype.io}/scope/<scope>/resource/available"
+  "https://api.cloudtype.io/scope/<scope>/resource/available"
 ```
 
 구독 풀/프리티어 풀 잔여를 보고하고 선택을 받습니다. 양쪽 다 부족하면 멈춥니다.
