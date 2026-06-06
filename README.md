@@ -1,4 +1,4 @@
-# ctype-skill
+# cloudtype-skill
 
 웹 서비스 한 벌 (백엔드 ± 프론트 ± DB) 의 코드 작성부터 [Cloudtype](https://cloudtype.io) 배포까지 한 사이클로 처리하는 AgentSkill 입니다.
 
@@ -34,7 +34,7 @@
 ## 구조
 
 ```
-ctype-skill/
+cloudtype-skill/
 ├── SKILL.md              # 진입점 (전체 흐름 + 정책)
 ├── reference/
 │   ├── github.md         # GitHub token 기반 repo 생성/commit/push/branch 조회

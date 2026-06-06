@@ -1,10 +1,10 @@
 ---
-name: ctype-skill
+name: cloudtype-skill
 description: "Create or update a web app and deploy it to Cloudtype with the ctype CLI. Use for Cloudtype, ctype, cloudtype.app, web app, API, DB, full-stack, or split frontend/backend deployment requests."
 allowed-tools: Bash(ctype:*), Bash(curl:*), Bash(python:*), Bash(python3:*), Bash(npm:*), Bash(which:*), Bash(git:*), Bash(gh:*)
 ---
 
-# ctype-skill
+# cloudtype-skill
 
 코드 작성부터 Cloudtype 배포까지 한 사이클로 처리합니다. 기본형은 **풀스택 한 통 ± DB**. 프론트/백엔드 분리는 사용자가 명시한 경우에만 선택합니다.
 
@@ -170,10 +170,10 @@ ctype routes
 ### 7.1 로그
 
 ```bash
-python3 /workspace/skills/ctype-skill/scripts/logs.py build <deployment>
-python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment>
-python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment> -f
-python3 /workspace/skills/ctype-skill/scripts/logs.py run <deployment> -p
+python3 /workspace/skills/cloudtype-skill/scripts/logs.py build <deployment>
+python3 /workspace/skills/cloudtype-skill/scripts/logs.py run <deployment>
+python3 /workspace/skills/cloudtype-skill/scripts/logs.py run <deployment> -f
+python3 /workspace/skills/cloudtype-skill/scripts/logs.py run <deployment> -p
 ```
 
 HTTP deployment 는 apply 후 30초 주기로 상태를 봅니다. `stopped` / `failed` 는 빌드 로그, `starting` 은 실행 로그, `running` 은 route/URL 테스트입니다. `running` 이후 응답 실패/재시작도 실행 로그를 봅니다. DB deployment 는 백엔드 연결/인증 실패가 있을 때 확인합니다.
